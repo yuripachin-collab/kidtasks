@@ -211,7 +211,12 @@ try {
   console.log('  ✗ непредвиденная ошибка — ' + String(e.message || e).split('\n')[0]);
 }
 
-console.log('\nE2E итог: ' + passed + ' прошло, ' + failed + ' упало');
+  if (pageErrors.length) { // п.21 ревью-2: неожиданные ошибки страницы валили итог
+    failed++;
+    console.log('  ✗ ошибки страницы во время прогона: ' + pageErrors.slice(0, 3).join(' | '));
+  }
+
+  console.log('\nE2E итог: ' + passed + ' прошло, ' + failed + ' упало');
 await browser.close();
 server.kill();
 process.exit(failed ? 1 : 0);

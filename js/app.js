@@ -9,6 +9,7 @@ window.App = (function () {
     config: null, role: null,
     taskFormOpen: false, editingTaskId: null,
     prodFormOpen: false, editingProductId: null, prodPhoto: null,
+    prodSeq: 0, prodPendingSeq: null,
     issueArmed: false, resetArmed: false
   };
 
@@ -53,23 +54,30 @@ window.App = (function () {
     try {
       await D.open();
       state.config = await Ops.getConfig();
-      applyTheme((state.config && state.config.theme) || 'light'); // спека: светлая по умолчанию (п.36)
-      if (navigator.storage && navigator.storage.persist) {
-        navigator.storage.persist().then((ok) => { if (!ok) toast('Хранилище может быть очищено системой'); }).catch(() => {});
-      }
-      if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-        navigator.serviceWorker.register('sw.js')
-          .then(() => { toast('Готово к работе без интернета'); })
-          .catch(() => { toast('Оффлайн-режим недоступен'); });
-      }
-      await D.ensureToday();
-      if (!state.config) { show('s-onboard'); return; }
-      $('#role-child-name').textContent = state.config.childName;
-      show('s-role');
     } catch (err) {
+      // п.5 ревью-2: ошибка чтения — НЕ открываем онбординг вслепую
       show('s-onboard');
       $('#ob-err').textContent = 'Хранилище недоступно: ' + (err && err.message ? err.message : 'неизвестная ошибка');
+      return;
     }
+    applyTheme((state.config && state.config.theme) || 'light');
+    if (navigator.storage && navigator.storage.persist) {
+      navigator.storage.persist().then((ok) => { if (!ok) toast('Хранилище может быть очищено системой'); }).catch(() => {});
+    }
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+      navigator.serviceWorker.register('sw.js')
+        .then(async (reg) => { await navigator.serviceWorker.ready; toast('Готово к работе без интернета'); })
+        .catch(() => { toast('Оффлайн-режим недоступен'); });
+    }
+    try {
+      await D.ensureToday();
+    } catch (err) {
+      // конфигурация целá — показываем роли, но честно говорим про ошибку (п.5/6 ревью-2)
+      toast('Ошибка хранилища: ' + (err && err.message ? err.message : 'неизвестная'));
+    }
+    if (!state.config) { show('s-onboard'); return; }
+    $('#role-child-name').textContent = state.config.childName;
+    show('s-role');
   }
 
   /* ---------- онбординг ---------- */
@@ -78,14 +86,16 @@ window.App = (function () {
     const name = R.validateName($('#ob-name').value); if (!name.ok) { errEl.textContent = name.err; return; }
     const pin = R.validatePin($('#ob-pin').value); if (!pin.ok) { errEl.textContent = pin.err; return; }
     if ($('#ob-pin').value !== $('#ob-pin2').value) { errEl.textContent = 'PIN не совпал'; return; }
-    const salt = Ops.randomSalt();
-    const hash = await Ops.hashPin(pin.value, salt);
-    await Ops.saveConfig({ childName: name.value, pin: { salt, hash }, theme: 'light' });
-    state.config = await Ops.getConfig();
-    applyTheme('light');
-    $('#ob-pin').value = ''; $('#ob-pin2').value = ''; // п.30 ревью: не оставляем PIN в полях
-    $('#role-child-name').textContent = name.value;
-    show('s-role');
+    try {
+      const salt = Ops.randomSalt();
+      const hash = await Ops.hashPin(pin.value, salt);
+      await Ops.saveConfig({ childName: name.value, pin: { salt, hash }, theme: 'light' });
+      state.config = await Ops.getConfig();
+      applyTheme('light');
+      $('#ob-pin').value = ''; $('#ob-pin2').value = ''; // п.30 ревью: не оставляем PIN в полях
+      $('#role-child-name').textContent = name.value;
+      show('s-role');
+    } catch (err) { errEl.textContent = err.message || 'Не получилось сохранить'; } // п.6 ревью-2
   });
 
   /* ---------- роли и PIN ---------- */
@@ -100,7 +110,11 @@ window.App = (function () {
     $('#role-child-name').textContent = state.config ? state.config.childName : '';
     show('s-role');
   });
-  $('#p-logout').addEventListener('click', () => { state.role = null; show('s-role'); });
+  $('#p-logout').addEventListener('click', () => {
+    state.role = null;
+    state.issueArmed = false; // п.7 ревью-2: подтверждение не переживает смену роли
+    show('s-role');
+  });
 
   async function enterChild() {
     await D.ensureToday();
@@ -131,15 +145,15 @@ window.App = (function () {
     }
   }
   $('#pin-submit').addEventListener('click', async () => {
-    if (busy) return; // п.17 ревью: одна проверка за раз
+    if (busy) return;
+    busy = true; // п.4 ревью-2: захват до первого await
     const errEl = $('#pin-err');
-    const lock = await Ops.getPinLock();
-    if (lock.until > Date.now()) return;
-    busy = true;
     try {
+      const lock = await Ops.getPinLock();
+      if (lock.until > Date.now()) return;
       const pass = $('#pin-pass').value;
-      const hash = await Ops.hashPin(pass, state.config.pin.salt);
-      if (hash === state.config.pin.hash) {
+      const ok = await Ops.verifyPin(pass, state.config.pin);
+      if (ok) {
         await Ops.putPinLock({ fails: 0, until: 0 });
         $('#pin-pass').value = '';
         await enterParent();
@@ -173,11 +187,12 @@ window.App = (function () {
     location.reload();
   });
 
-  /* п.10 ревью: возврат в приложение после полуночи — пересоздаём день и перерисовываем */
+  /* п.10 ревью-2: возврат из фона — обновляем день и данные, но НЕ перерисовываем открытые формы */
   document.addEventListener('visibilitychange', async () => {
     if (document.hidden || !state.role) return;
     try {
       await D.ensureToday();
+      if (state.taskFormOpen || state.prodFormOpen) return; // беречём введённые значения
       $('#child-date').textContent = dateLine();
       if (state.role === 'child') { await renderChildTasks(); await renderChildShop(); await renderHistory($('#c-history')); }
       else { await renderParentTasks(); await renderParentShop(); await renderParentBalance(); }
@@ -194,8 +209,8 @@ window.App = (function () {
 
   /* ---------- подросток: задачи ---------- */
   async function renderChildTasks() {
-    const today = D.todayStr();
     await D.ensureToday();
+    const today = D.todayStr(); // дата ПОСЛЕ ensureToday (п.2 ревью-2)
     const day = await D.get('days', today);
     const hist = await D.all('history');
     const cart = await D.all('cart');
@@ -231,8 +246,8 @@ window.App = (function () {
       + '<div class="mid"><div class="name"' + (i.done ? ' style="text-decoration:line-through;color:var(--muted)"' : '') + '>' + esc(i.name) + '</div>'
       + '<div class="sub2" style="color:var(--coin-ink);font-weight:700">+' + i.points + ' ⭐</div></div>'
       + (i.done
-        ? '<button class="btn btn-ghost" data-action="done" data-id="' + i.taskId + '">Снять</button>'
-        : '<button class="btn" data-action="done" data-id="' + i.taskId + '">Готово ✓</button>')
+        ? '<button class="btn btn-ghost" data-action="done" data-date="' + today + '" data-id="' + i.taskId + '">Снять</button>'
+        : '<button class="btn" data-action="done" data-date="' + today + '" data-id="' + i.taskId + '">Готово ✓</button>')
       + '</div>').join('');
   }
   $('#pane-c-tasks').addEventListener('click', async (e) => {
@@ -241,15 +256,14 @@ window.App = (function () {
       try {
         if (b.dataset.action === 'request') { await Ops.setRequest(); await renderChildTasks(); }
         if (b.dataset.action === 'done') {
-          // п.2 ревью: снятие отметки вернетёт баллы с вычетом — предупредим заранее по-человечески
+          // п.2 ревью-2: кнопка помнит свой день; устаревшая (после полуночи) — отклонится операцией
           if (b.textContent.indexOf('Снять') === 0) {
             const bal = await Ops.balance();
-            const today = D.todayStr();
-            const day = await D.get('days', today);
+            const day = await D.get('days', b.dataset.date);
             const item = day && day.items.find((i) => i.taskId === b.dataset.id);
             if (item && bal < item.points) { toast('Сначала убери лишнее из корзины'); return; }
           }
-          await Ops.completeTask(D.todayStr(), b.dataset.id);
+          await Ops.completeTask(b.dataset.date, b.dataset.id);
           await renderChildTasks(); await renderChildShop(); await renderHistory($('#c-history'));
         }
       } catch (err) { toast(err.message || 'Не получилось'); }
@@ -353,10 +367,13 @@ window.App = (function () {
     const req = await Ops.getRequest();
     const box = $('#p-request');
     if (req && !req.closed) {
+      const dayFull = day && day.items.length > 0;
       box.innerHTML = '<div class="banner banner-pink"><span>❗ ' + esc(state.config.childName)
         + ' спросил «что мне сегодня делать?» (' + esc(req.date) + ')</span>'
         + '<span style="display:flex;gap:8px;flex-wrap:wrap">'
-        + '<button class="btn" data-act="assign" style="min-height:44px">Назначить на сегодня</button>'
+        + (dayFull
+          ? '' // п.12 ревью-2: день уже заполнен — назначать нечего
+          : '<button class="btn" data-act="assign" style="min-height:44px">Назначить на сегодня</button>')
         + '<button class="btn-text" data-act="closereq">Закрыть</button></span></div>';
     } else box.innerHTML = '';
 
@@ -521,13 +538,14 @@ window.App = (function () {
         }
         if (act === 'posrm') {
           if (confirm('Убрать позицию из корзины? Баллы вернутся ' + state.config.childName + '.')) {
+            state.issueArmed = false; // состав корзины изменился (п.7 ревью-2)
             await Ops.cartRemovePosition(b.dataset.key);
             await renderParentShop(); await renderParentBalance(); await renderParentTasks();
           }
         }
-        if (act === 'newprod') { state.prodFormOpen = true; state.editingProductId = null; state.prodPhoto = null; await renderParentShop(); }
-        if (act === 'pedit') { state.prodFormOpen = true; state.editingProductId = b.dataset.id; state.prodPhoto = null; await renderParentShop(); }
-        if (act === 'cancelpord') { state.prodFormOpen = false; state.editingProductId = null; state.prodPhoto = null; await renderParentShop(); }
+        if (act === 'newprod') { state.prodFormOpen = true; state.editingProductId = null; state.prodPhoto = null; state.prodSeq++; await renderParentShop(); }
+        if (act === 'pedit') { state.prodFormOpen = true; state.editingProductId = b.dataset.id; state.prodPhoto = null; state.prodSeq++; await renderParentShop(); }
+        if (act === 'cancelpord') { state.prodFormOpen = false; state.editingProductId = null; state.prodPhoto = null; state.prodSeq++; await renderParentShop(); }
         if (act === 'pdel') {
           if (confirm('Удалить товар из каталога? Корзина и история не изменятся.')) { // п.7 ревью
             await Ops.deleteProduct(b.dataset.id);
@@ -535,7 +553,7 @@ window.App = (function () {
           }
         }
         if (act === 'saveprod') {
-          if (state.prodBusy) return; // п.29 ревью: фото ещё обрабатывается
+          if (state.prodPendingSeq === state.prodSeq && state.prodPendingSeq !== null) return; // п.8 ревью-2: фото ещё читается
           const product = { name: $('#p-prod-name').value, price: $('#p-prod-price').value, photo: state.prodPhoto };
           if (state.editingProductId) {
             product.id = state.editingProductId;
@@ -553,13 +571,16 @@ window.App = (function () {
   });
   $('#p-shop').addEventListener('change', async (e) => {
     if (e.target.id !== 'p-prod-photo' || !e.target.files || !e.target.files[0]) return;
+    const seq = state.prodSeq; // п.8 ревью-2: фото привязано к конкретной форме
     const saveBtn = document.querySelector('#p-shop [data-act="saveprod"]');
-    state.prodBusy = true; if (saveBtn) saveBtn.disabled = true; // п.29 ревью
+    state.prodPendingSeq = seq; if (saveBtn) saveBtn.disabled = true;
     try {
-      state.prodPhoto = await fileToDataUrl(e.target.files[0], 512);
-      $('#p-prod-preview').innerHTML = '<img src="' + state.prodPhoto + '" alt="" style="height:80px;border-radius:10px">';
+      const dataUrl = await fileToDataUrl(e.target.files[0], 512);
+      if (state.prodSeq !== seq) return; // форма сменилась, пока читали
+      state.prodPhoto = dataUrl;
+      $('#p-prod-preview').innerHTML = '<img src="' + dataUrl + '" alt="" style="height:80px;border-radius:10px">';
     } catch (err) { toast(err.message || 'Фото не прочиталось'); }
-    finally { state.prodBusy = false; if (saveBtn) saveBtn.disabled = false; }
+    finally { if (state.prodPendingSeq === seq) state.prodPendingSeq = null; if (saveBtn) saveBtn.disabled = false; }
   });
 
   /* ---------- родитель: баланс ---------- */

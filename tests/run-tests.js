@@ -202,6 +202,41 @@ async function throws(fn, code) {
     await Ops.resetAll(); await D.open();
     assert.strictEqual(await Ops.getConfig(), null);
   });
+  await test('граница дня: правка ДО создания снимка не трогает сегодняшний список (ревью-2 №1)', async () => {
+    await Ops.saveConfig({ childName: 'Юра', pin: { salt: 's', hash: 'h' }, theme: 'light' });
+    await Ops.saveTask({ name: 'Старая задача', points: 10 }); // since=завтра
+    const t = (await D.all('tasks'))[0];
+    // снимок на сегодня уже существовал (приложение открыли раньше правки)
+    await D.put('days', { date: D.todayStr(), items: [{ taskId: t.id, name: 'Старая задача', points: 10, done: false }] });
+    await Ops.saveTask({ id: t.id, name: 'Обновлённая', points: 20 }); // правка на границе дня
+    await D.ensureToday();
+    const day = await D.get('days', D.todayStr());
+    assert.strictEqual(day.items.length, 1);       // снимок не перезаписан
+    assert.strictEqual(day.items[0].name, 'Старая задача'); // сегодня живёт старая версия
+    assert.strictEqual(day.items[0].points, 10);
+    assert.strictEqual((await D.all('tasks'))[0].name, 'Обновлённая'); // с завтрашнего дня — новая
+  });
+  await test('корзина: переименование при той же цене — отдельная позиция (ревью-2 №3)', async () => {
+    const day = await D.get('days', D.todayStr());
+    await Ops.completeTask(D.todayStr(), day.items[0].taskId); // +20
+    await Ops.saveProduct({ name: 'Пятый шоколад', price: 5 });
+    const pid = (await D.all('products'))[0].id;
+    await Ops.cartAdd(pid); // 15
+    await Ops.saveProduct({ id: pid, name: 'Шоколадка Ronald', price: 5 }); // та же цена, новое имя
+    await Ops.cartAdd(pid); // 10 — должна быть ДРУГАЯ позиция
+    const cart = await D.all('cart');
+    assert.strictEqual(cart.length, 2);
+    assert.strictEqual(cart[0].name, 'Пятый шоколад');
+    assert.strictEqual(cart[1].name, 'Шоколадка Ronald');
+  });
+  await test('удаление товара с наполненной корзиной: возврат по снимку (п.18 ревью-2)', async () => {
+    await Ops.deleteProduct((await D.all('products'))[0].id);
+    assert.strictEqual((await D.all('products')).length, 0);
+    const cart = await D.all('cart');
+    assert.strictEqual(cart.length, 2); // корзина пережила удаление товара
+    await Ops.cartRemoveUnit(cart[1].key, false); // +5 → 5
+    assert.strictEqual(await Ops.balance(), 5);
+  });
 
   console.log('\nИтог: ' + passed + ' прошло, ' + failed + ' упало');
   process.exit(failed ? 1 : 0);

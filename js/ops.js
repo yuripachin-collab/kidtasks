@@ -29,35 +29,59 @@ window.Ops = (function () {
     });
   }
 
-  /* --- PIN: PBKDF2 (100k итераций). Префикс алгоритма хранится в хеше;
-     при недоступности crypto.subtle используется явный резерв (замечание п.19 —
-     на одном устройстве набор API не меняется между сессиями). --- */
+  /* --- PIN: PBKDF2 обязателен для новых PIN; проверка — сохранённым алгоритмом (п.14 ревью-2) --- */
   function randomSalt() {
     const a = new Uint8Array(16);
     crypto.getRandomValues(a);
     return Array.from(a).map((b) => b.toString(16).padStart(2, '0')).join('');
   }
+  async function pbkdf2(pin, salt) {
+    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pin), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits(
+      { name: 'PBKDF2', salt: new TextEncoder().encode(salt), iterations: 100000, hash: 'SHA-256' }, key, 256);
+    return 'pbkdf2$' + btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(bits))));
+  }
   async function hashPin(pin, salt) {
-    try {
-      const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pin), 'PBKDF2', false, ['deriveBits']);
-      const bits = await crypto.subtle.deriveBits(
-        { name: 'PBKDF2', salt: new TextEncoder().encode(salt), iterations: 100000, hash: 'SHA-256' }, key, 256);
-      return 'pbkdf2$' + btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(bits))));
-    } catch (e1) {
-      const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(salt + ':' + pin));
-      return 'sha256$' + btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(d))));
-    }
+    if (!(self.crypto && crypto.subtle)) throw fail('crypto', 'Криптография браузера недоступна — PIN нельзя создать');
+    return pbkdf2(pin, salt);
+  }
+  async function verifyPin(pin, rec) {
+    const algo = String(rec.hash).split('$')[0];
+    const computed = algo === 'sha256'
+      ? 'sha256$' + btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(
+          await crypto.subtle.digest('SHA-256', new TextEncoder().encode(rec.salt + ':' + pin))))))
+      : await pbkdf2(pin, rec.salt);
+    return computed === rec.hash;
   }
 
   /* --- задачи (R2) --- */
+  /* п.1 ревью-2: перед правкой гарантируем существование снимка сегодняшнего дня
+     (в той же транзакции) — иначе правка на границе полуночи «пропадёт» из сегодня */
+  function ensureDayInTx(tx, today) {
+    return new Promise((resolve) => {
+      const dq = tx.objectStore('days').get(today);
+      dq.onsuccess = () => {
+        if (dq.result) { resolve(); return; }
+        const tq = tx.objectStore('tasks').getAll();
+        tq.onsuccess = () => {
+          const items = (tq.result || [])
+            .filter((x) => !x.archived && (!x.since || x.since <= today))
+            .map((x) => ({ taskId: x.id, name: x.name, points: x.points, done: false }));
+          tx.objectStore('days').put({ date: today, items });
+          resolve();
+        };
+      };
+    });
+  }
   function saveTask(task) {
     const t = R.validateTitle(task.name); if (!t.ok) return Promise.reject(fail('invalid', t.err));
     const p = R.validatePoints(task.points); if (!p.ok) return Promise.reject(fail('invalid', p.err));
-    return D.run(['tasks'], 'readwrite', (tx) => {
+    return D.run(['tasks', 'days'], 'readwrite', async (tx) => {
       const today = D.todayStr(), tomorrow = R.nextDateStr();
+      await ensureDayInTx(tx, today);
       const write = (existing) => {
         // правка задачи с будущей датой — обновляем ту же «завтрашнюю» версию;
-        // сегодняшний список защищён снимком дня (создаётся при открытии приложения)
+        // сегодняшний список защищён снимком дня, созданным строчкой выше
         let since = tomorrow;
         if (existing && existing.since && existing.since > today) since = existing.since;
         const id = existing ? existing.id : newId('t');
@@ -65,12 +89,16 @@ window.Ops = (function () {
       };
       if (task.id) {
         const g = tx.objectStore('tasks').get(task.id);
-        g.onsuccess = () => write(g.result);
+        await new Promise((res) => { g.onsuccess = () => { write(g.result); res(); }; });
       } else write(null);
     });
   }
   function deleteTask(id) {
-    return D.run(['tasks'], 'readwrite', (tx) => { tx.objectStore('tasks').delete(id); });
+    return D.run(['tasks', 'days'], 'readwrite', async (tx) => {
+      const today = D.todayStr();
+      await ensureDayInTx(tx, today);
+      tx.objectStore('tasks').delete(id);
+    });
   }
 
   /* --- выполнение задач (R1, R5): снятие отметки ОБРАЩАЕТ начисление, а не повторяет его (п.2 ревью) --- */
@@ -160,7 +188,7 @@ window.Ops = (function () {
         hq.onsuccess = () => {
           const bal2 = R.computeBalance(hq.result || []);
           if (bal2 < p2.price) { tx.abort(); return; }
-          const key = productId + '@' + p2.price;
+          const key = productId + '@' + p2.price + '@' + p2.name; // п.3 ревью-2: имя в ключе — переименование создаёт новую партию
           const cq = tx.objectStore('cart').get(key);
           cq.onsuccess = () => {
             const pos = cq.result;
@@ -248,8 +276,8 @@ window.Ops = (function () {
   }
   async function changePin(currentPin, newPin) {
     const cfg = await getConfig(); if (!cfg) throw fail('no_config', 'Нет конфигурации');
-    const cur = await hashPin(currentPin, cfg.pin.salt);
-    if (cur !== cfg.pin.hash) throw fail('wrong_pin', 'Текущий PIN неверен');
+    const ok = await verifyPin(currentPin, cfg.pin);
+    if (!ok) throw fail('wrong_pin', 'Текущий PIN неверен');
     const v = R.validatePin(newPin); if (!v.ok) throw fail('invalid', v.err);
     const salt = randomSalt();
     const hash = await hashPin(v.value, salt);
@@ -270,7 +298,7 @@ window.Ops = (function () {
   }
 
   return {
-    balance, getConfig, saveConfig, hashPin, randomSalt,
+    balance, getConfig, saveConfig, hashPin, verifyPin, randomSalt,
     saveTask, assignToday, deleteTask, completeTask, setRequest, closeRequest, getRequest,
     cartAdd, cartRemoveUnit, cartRemovePosition, issueCart, adjust,
     saveProduct, deleteProduct,
