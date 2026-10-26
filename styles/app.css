@@ -47,14 +47,14 @@ input,select{font:inherit;color:inherit}
 .i-blue{background:var(--blue-soft)} .i-violet{background:var(--violet-soft)}
 .i-pink{background:var(--pink-soft)} .i-green{background:var(--accent-soft)}
 
-/* ---- кнопки: тач-зона от 44px (ревью Codex, п.28) ---- */
-.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;
+/* ---- кнопки: тач-зона от 44px в обе стороны (ревью Codex, п.28/37) ---- */
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;
   padding:10px 18px;border-radius:var(--r-sm);
   background:var(--accent);color:#fff;font-size:14px;font-weight:700}
 .btn:disabled{opacity:.55}
 .btn-ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
 .btn-danger{background:var(--danger)}
-.btn-text{color:var(--muted);font-size:13px;font-weight:600;min-height:44px;padding:10px}
+.btn-text{color:var(--muted);font-size:13px;font-weight:600;min-height:44px;min-width:44px;padding:10px}
 .btn-big{width:100%;font-size:16px;border-radius:14px;min-height:50px}
 .linklike{color:var(--muted);font-size:13px;font-weight:600;min-height:44px;padding:10px 0}
 

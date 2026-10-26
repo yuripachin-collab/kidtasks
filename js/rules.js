@@ -56,41 +56,31 @@ window.Rules = (function () {
   function dayAllDone(day) { return !!day && day.items.length > 0 && day.items.every((i) => i.done); }
   function dayPending(day) { return day ? day.items.filter((i) => !i.done).length : 0; }
 
-  /* Серия 🔥 (R4): идём назад от сегодня.
-     - сегодня: растит серию, только если выполнено всё; незавершённое/пустое — не рвёт и не растит;
-     - прошедшие дни: полный ++, пустой (или без снимка) — пауза (пропуск), неполный — разрывает. */
+  /* Серия 🔥 (R4): идём по снимкам от сегодня назад.
+     - сегодня: растит серию, только если выполнено всё; незавершённое сегодня — не рвёт и не растит;
+     - прошедшие дни: полный ++, пустой — пауза (пропуск), неполный — разрывает;
+     - дни без снимка (приложение не открывали) — пауза; ограничение зафиксировано в спеке §7 (п.11 ревью). */
   function streak(days, today) {
-    const map = {};
-    for (const d of days) map[d.date] = d;
+    const sorted = days
+      .filter((d) => d.date <= today)
+      .sort((a, b) => (a.date < b.date ? 1 : -1));
     let s = 0;
-    const d = new Date(today + 'T00:00:00');
-    for (let i = 0; i < 366; i++) {
-      const key = dateStr(d);
-      const day = map[key];
-      const complete = dayAllDone(day);
-      if (key === today) {
+    for (const d of sorted) {
+      if (d.items.length === 0) continue;
+      const complete = d.items.every((i) => i.done);
+      if (d.date === today) {
         if (complete) s++;
-      } else {
-        if (!day || day.items.length === 0) { /* пауза */ }
-        else if (complete) s++;
-        else break;
+        continue;
       }
-      d.setDate(d.getDate() - 1);
+      if (complete) s++;
+      else break;
     }
     return s;
   }
 
-  /* Читаемые подписи истории. */
+  /* Знак движения — по сумме записи: «back» бывает и возвратом (+), и снятием отметки (−) (п.2 ревью). */
   function historyLabel(h) {
-    switch (h.type) {
-      case 'earn': return { sign: 1, text: h.title };
-      case 'to_cart': return { sign: -1, text: h.title };
-      case 'back': return { sign: 1, text: h.title };
-      case 'bonus': return { sign: 1, text: h.title };
-      case 'deduct': return { sign: -1, text: h.title };
-      case 'issued': return { sign: 0, text: h.title };
-      default: return { sign: 0, text: h.title || 'Событие' };
-    }
+    return { sign: Math.sign(h.amount) || 0, text: h.title || 'Событие' };
   }
 
   return {
