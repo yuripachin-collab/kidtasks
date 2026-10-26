@@ -10,7 +10,7 @@
 
 - [x] Этап 1. Investigation — [docs/01-investigation.md](docs/01-investigation.md)
 - [x] Этап 2. Спецификация — [docs/02-spec.md](docs/02-spec.md)
-- [ ] Этап 3. План / архитектура
+- [x] Этап 3. План / архитектура — [docs/04-plan.md](docs/04-plan.md), макеты: [mockups/](mockups/), референсы: [docs/03-design-references.md](docs/03-design-references.md)
 - [ ] Этап 4. Кодинг
 - [ ] Этап 5. Тестирование
 - [ ] Этап 6. Деплой (PWA на iPhone + apk в эмуляторе для тренировки)
