@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>KidTasks — макет: Задачи подростка</title>
 <style>
-  /* KidTasks · дизайн-токены сняты программно с референса Emote Agency.
-     Макет 1 из 3: экран подростка — задачи на сегодня. Статика, без JS. */
+  /* KidTasks · ревизия 2 · макет 1 из 5: экран подростка — два состояния (есть задачи / пусто).
+     Палитра снята программно с референса Emote Agency. Статика, без JS. */
   :root{
     --bg:#EDF3FA; --surface:#FFFFFF; --ink:#1F2430; --muted:#77839B;
     --accent:#10A070; --accent-soft:#E2F5EE;
@@ -26,6 +26,9 @@
   }
   .caption{color:#5B6B85;font-size:14px;text-align:center;line-height:1.5}
   .caption b{color:var(--ink)}
+  .row{display:flex;gap:44px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+  .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .frame .cap{font-size:13px;color:#5B6B85;font-weight:600}
   .phone{
     width:393px;max-width:100%;height:852px;border-radius:55px;background:var(--bg);
     box-shadow:0 0 0 12px #111621, 0 34px 80px rgba(17,22,33,.35);
@@ -35,16 +38,13 @@
     width:118px;height:34px;border-radius:20px;background:#111621;z-index:5}
   .statusbar{height:58px;display:flex;align-items:flex-end;justify-content:space-between;
     padding:0 30px 6px;font-size:15px;font-weight:600}
-  .statusbar svg{display:block}
   .content{height:calc(100% - 58px - 84px);padding:6px 20px 16px;display:flex;flex-direction:column;gap:14px;min-width:0}
-  /* ---- шапка ---- */
   .head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
   .head h1{font-size:26px;font-weight:800;letter-spacing:-.02em}
   .head .date{color:var(--muted);font-size:14px;margin-top:3px}
   .streak{display:flex;align-items:center;gap:6px;background:var(--coin-soft);color:#B96E06;
     font-weight:800;font-size:15px;font-variant-numeric:tabular-nums;
     padding:8px 14px;border-radius:999px;flex:none}
-  /* ---- карточка баланса ---- */
   .balance{background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow);
     padding:18px;display:flex;align-items:center;justify-content:space-between;gap:14px}
   .balance .label{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
@@ -52,12 +52,9 @@
     font-size:38px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
   .star{width:30px;height:30px;border-radius:50%;background:var(--coin);color:#fff;
     display:flex;align-items:center;justify-content:center;font-size:16px;flex:none}
-  .goal{flex:none;width:150px}
-  .goal .t{font-size:13px;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
-  .goal .t b{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:700}
-  .bar{height:8px;border-radius:99px;background:var(--blue-soft);margin-top:8px;overflow:hidden}
-  .bar i{display:block;height:100%;width:48%;border-radius:99px;background:var(--accent)}
-  /* ---- список задач ---- */
+  .incart{flex:none;text-align:right}
+  .incart .t{font-size:13px;font-weight:600;color:var(--muted);line-height:1.35}
+  .incart b{color:var(--violet);font-variant-numeric:tabular-nums}
   .sec{display:flex;align-items:center;justify-content:space-between}
   .sec h2{font-size:17px;font-weight:700}
   .sec .count{font-size:13px;font-weight:600;color:var(--muted);background:var(--surface);
@@ -78,7 +75,15 @@
     font-size:13px;font-weight:700;padding:9px 16px;border-radius:var(--r-sm);flex:none}
   .ok{width:30px;height:30px;border-radius:50%;background:var(--accent-soft);color:var(--accent);
     display:flex;align-items:center;justify-content:center;flex:none;font-size:15px;font-weight:800}
-  /* ---- таб-бар ---- */
+  .empty{border:2px dashed #C4D2E4;border-radius:var(--r-lg);padding:34px 22px;
+    display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+  .empty .emo{font-size:40px}
+  .empty .t{font-size:16px;font-weight:700}
+  .empty .s{font-size:13px;color:var(--muted);line-height:1.45}
+  .ask{border:0;cursor:default;background:var(--accent);color:#fff;font:inherit;
+    font-size:15px;font-weight:700;padding:14px 22px;border-radius:14px}
+  .sent{display:inline-flex;align-items:center;gap:7px;background:var(--violet-soft);color:#4B3FB8;
+    font-size:13px;font-weight:700;padding:8px 14px;border-radius:999px}
   .tabbar{position:absolute;left:0;right:0;bottom:0;height:84px;background:var(--surface);
     border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:flex-start;
     padding:10px 10px 0}
@@ -90,80 +95,123 @@
 </style>
 </head>
 <body>
-  <div class="caption"><b>KidTasks · макет 1 из 3</b> — экран подростка «Задачи на сегодня»<br>статичный макет · референс: Emote Agency · палитра снята с референса</div>
+  <div class="caption"><b>KidTasks · макет 1 из 5 — экран подростка «Задачи»</b> · ревизия 2<br>два состояния: задачи назначены / родитель ещё не назначил</div>
 
-  <div class="phone">
-    <div class="island"></div>
-    <div class="statusbar">
-      <span>9:41</span>
-      <span style="display:flex;gap:7px;align-items:center">
-        <svg width="18" height="12" viewBox="0 0 18 12" fill="#1F2430"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
-        <svg width="17" height="12" viewBox="0 0 17 12" fill="#1F2430"><path d="M8.5 9.6a2 2 0 0 1 2 1.9l-2 2-2-2a2 2 0 0 1 2-1.9zm-4.2-2.7a6.3 6.3 0 0 1 8.4 0l-1.5 1.6a4.2 4.2 0 0 0-5.4 0L4.3 6.9zM1.2 3.9a10.7 10.7 0 0 1 14.6 0l-1.5 1.6a8.6 8.6 0 0 0-11.6 0L1.2 3.9z" transform="translate(0 -1.5)"/></svg>
-        <svg width="26" height="12" viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" fill="none" stroke="#1F2430" opacity=".4"/><rect x="2" y="2" width="15" height="8" rx="2" fill="#1F2430"/><path d="M23.5 4v4a2.2 2.2 0 0 0 0-4z" fill="#1F2430" opacity=".4"/></svg>
-      </span>
+  <div class="row">
+    <div class="frame">
+      <div class="cap">Состояние 1 — задачи на день есть</div>
+      <div class="phone">
+        <div class="island"></div>
+        <div class="statusbar">
+          <span>9:41</span>
+          <span style="display:flex;gap:7px;align-items:center">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="#1F2430"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+            <svg width="17" height="12" viewBox="0 0 17 12" fill="#1F2430"><path d="M8.5 9.6a2 2 0 0 1 2 1.9l-2 2-2-2a2 2 0 0 1 2-1.9zm-4.2-2.7a6.3 6.3 0 0 1 8.4 0l-1.5 1.6a4.2 4.2 0 0 0-5.4 0L4.3 6.9zM1.2 3.9a10.7 10.7 0 0 1 14.6 0l-1.5 1.6a8.6 8.6 0 0 0-11.6 0L1.2 3.9z" transform="translate(0 -1.5)"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" fill="none" stroke="#1F2430" opacity=".4"/><rect x="2" y="2" width="15" height="8" rx="2" fill="#1F2430"/><path d="M23.5 4v4a2.2 2.2 0 0 0 0-4z" fill="#1F2430" opacity=".4"/></svg>
+          </span>
+        </div>
+        <div class="content">
+          <div class="head">
+            <div><h1>Привет!</h1><div class="date">воскресенье, 26 октября</div></div>
+            <div class="streak">🔥 6</div>
+          </div>
+          <div class="balance">
+            <div>
+              <div class="label">Баланс</div>
+              <div class="amount"><span class="star">⭐</span>120</div>
+            </div>
+            <div class="incart"><div class="t">ещё <b>80 ⭐</b> в корзине —<br>ждёт родителя</div></div>
+          </div>
+          <div class="sec">
+            <h2>Задачи на сегодня</h2>
+            <span class="count">2 из 4</span>
+          </div>
+          <div class="tasks">
+            <div class="task">
+              <div class="ico i-blue">📚</div>
+              <div class="mid"><div class="name">Домашка по математике</div><div class="pts">+15 ⭐</div></div>
+              <button class="btn">Готово</button>
+            </div>
+            <div class="task">
+              <div class="ico i-violet">🧹</div>
+              <div class="mid"><div class="name">Убрать комнату</div><div class="pts">+20 ⭐</div></div>
+              <button class="btn">Готово</button>
+            </div>
+            <div class="task done">
+              <div class="ico i-green">🍽</div>
+              <div class="mid"><div class="name">Помыть посуду</div><div class="pts">+10 ⭐</div></div>
+              <div class="ok">✓</div>
+            </div>
+            <div class="task done">
+              <div class="ico i-pink">📖</div>
+              <div class="mid"><div class="name">Читать 30 минут</div><div class="pts">+10 ⭐</div></div>
+              <div class="ok">✓</div>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tab on">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.2 2.4 2.4 4.6-5.2"/></svg>
+            Задачи
+          </div>
+          <div class="tab">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1.2 12H7.2L6 8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>
+            Магазин
+          </div>
+          <div class="tab">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg>
+            История
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="content">
-      <div class="head">
-        <div>
-          <h1>Привет!</h1>
-          <div class="date">воскресенье, 26 октября</div>
+    <div class="frame">
+      <div class="cap">Состояние 2 — родитель не назначил задачи</div>
+      <div class="phone">
+        <div class="island"></div>
+        <div class="statusbar">
+          <span>9:41</span>
+          <span style="display:flex;gap:7px;align-items:center">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="#1F2430"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+            <svg width="17" height="12" viewBox="0 0 17 12" fill="#1F2430"><path d="M8.5 9.6a2 2 0 0 1 2 1.9l-2 2-2-2a2 2 0 0 1 2-1.9zm-4.2-2.7a6.3 6.3 0 0 1 8.4 0l-1.5 1.6a4.2 4.2 0 0 0-5.4 0L4.3 6.9zM1.2 3.9a10.7 10.7 0 0 1 14.6 0l-1.5 1.6a8.6 8.6 0 0 0-11.6 0L1.2 3.9z" transform="translate(0 -1.5)"/></svg>
+            <svg width="26" height="12" viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" fill="none" stroke="#1F2430" opacity=".4"/><rect x="2" y="2" width="15" height="8" rx="2" fill="#1F2430"/><path d="M23.5 4v4a2.2 2.2 0 0 0 0-4z" fill="#1F2430" opacity=".4"/></svg>
+          </span>
         </div>
-        <div class="streak">🔥 6</div>
-      </div>
-
-      <div class="balance">
-        <div>
-          <div class="label">Баланс</div>
-          <div class="amount"><span class="star">⭐</span>240</div>
+        <div class="content">
+          <div class="head">
+            <div><h1>Привет!</h1><div class="date">воскресенье, 26 октября</div></div>
+            <div class="streak">🔥 6</div>
+          </div>
+          <div class="balance">
+            <div>
+              <div class="label">Баланс</div>
+              <div class="amount"><span class="star">⭐</span>120</div>
+            </div>
+            <div class="incart"><div class="t">ещё <b>80 ⭐</b> в корзине —<br>ждёт родителя</div></div>
+          </div>
+          <div class="empty">
+            <div class="emo">🗒️</div>
+            <div class="t">На сегодня ничего не назначено</div>
+            <div class="s">Похоже, родитель ещё не заполнил задачи.<br>Напомни ему — он получит уведомление.</div>
+            <button class="ask">Что мне сегодня делать?</button>
+            <span class="sent">✓ Запрос отправлено — родитель уже знает</span>
+          </div>
         </div>
-        <div class="goal">
-          <div class="t"><span>Копишь на 🎧 Наушники</span><b>240/500</b></div>
-          <div class="bar"><i></i></div>
+        <div class="tabbar">
+          <div class="tab on">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.2 2.4 2.4 4.6-5.2"/></svg>
+            Задачи
+          </div>
+          <div class="tab">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1.2 12H7.2L6 8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>
+            Магазин
+          </div>
+          <div class="tab">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg>
+            История
+          </div>
         </div>
-      </div>
-
-      <div class="sec">
-        <h2>Задачи на сегодня</h2>
-        <span class="count">2 из 4</span>
-      </div>
-
-      <div class="tasks">
-        <div class="task">
-          <div class="ico i-blue">📚</div>
-          <div class="mid"><div class="name">Домашка по математике</div><div class="pts">+15 ⭐</div></div>
-          <button class="btn">Готово</button>
-        </div>
-        <div class="task">
-          <div class="ico i-violet">🧹</div>
-          <div class="mid"><div class="name">Убрать комнату</div><div class="pts">+20 ⭐</div></div>
-          <button class="btn">Готово</button>
-        </div>
-        <div class="task done">
-          <div class="ico i-green">🍽</div>
-          <div class="mid"><div class="name">Помыть посуду</div><div class="pts">+10 ⭐</div></div>
-          <div class="ok">✓</div>
-        </div>
-        <div class="task done">
-          <div class="ico i-pink">📖</div>
-          <div class="mid"><div class="name">Читать 30 минут</div><div class="pts">+10 ⭐</div></div>
-          <div class="ok">✓</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="tabbar">
-      <div class="tab on">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.2 2.4 2.4 4.6-5.2"/></svg>
-        Задачи
-      </div>
-      <div class="tab">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1.2 12H7.2L6 8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>
-        Магазин
-      </div>
-      <div class="tab">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg>
-        История
       </div>
     </div>
   </div>

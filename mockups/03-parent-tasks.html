@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>KidTasks — макет: Задачи (родитель)</title>
 <style>
-  /* KidTasks · макет 3 из 3: экран родителя — управление задачами. Статика. */
+  /* KidTasks · ревизия 2 · макет 3 из 5: экран родителя — задачи без дней недели,
+     напоминание от подростка. Статика. */
   :root{
     --bg:#EDF3FA; --surface:#FFFFFF; --ink:#1F2430; --muted:#77839B;
     --accent:#10A070; --accent-soft:#E2F5EE;
@@ -34,32 +35,31 @@
     width:118px;height:34px;border-radius:20px;background:#111621;z-index:5}
   .statusbar{height:58px;display:flex;align-items:flex-end;justify-content:space-between;
     padding:0 30px 6px;font-size:15px;font-weight:600}
-  .content{height:calc(100% - 58px - 84px);padding:6px 20px 16px;display:flex;flex-direction:column;gap:13px;min-width:0}
+  .content{height:calc(100% - 58px - 84px);padding:6px 20px 16px;display:flex;flex-direction:column;gap:12px;min-width:0}
   .head{display:flex;align-items:center;justify-content:space-between;gap:12px}
   .head h1{font-size:26px;font-weight:800;letter-spacing:-.02em}
   .head .sub{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:14px;margin-top:3px}
   .head .sub b{color:var(--coin);font-variant-numeric:tabular-nums}
   .add{border:0;background:var(--accent);color:#fff;font:inherit;font-size:14px;font-weight:700;
     padding:11px 18px;border-radius:var(--r-sm);flex:none}
+  .req{background:var(--pink-soft);border-radius:var(--r-md);padding:13px 15px;
+    display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .req .t{font-size:14px;font-weight:600;color:#B8486E;line-height:1.35}
+  .req .go{border:0;font:inherit;font-size:13px;font-weight:700;color:#fff;background:var(--accent);
+    padding:9px 14px;border-radius:10px;white-space:nowrap;flex:none}
+  .note{font-size:12px;color:var(--muted);text-align:center}
   .list{display:flex;flex-direction:column;gap:10px;min-width:0}
   .task{background:var(--surface);border-radius:var(--r-md);box-shadow:var(--shadow);
-    padding:13px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
-  .row1{display:flex;align-items:center;gap:12px}
-  .row1 .ico{width:40px;height:40px;border-radius:13px;display:flex;align-items:center;
+    padding:13px 14px;display:flex;align-items:center;gap:12px;min-width:0}
+  .task .ico{width:40px;height:40px;border-radius:13px;display:flex;align-items:center;
     justify-content:center;font-size:19px;flex:none}
   .i-blue{background:var(--blue-soft)} .i-violet{background:var(--violet-soft)}
   .i-pink{background:var(--pink-soft)} .i-green{background:var(--accent-soft)}
-  .row1 .mid{flex:1;min-width:0}
-  .row1 .name{font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis}
-  .row1 .pts{color:var(--coin);font-weight:800;font-size:14px;font-variant-numeric:tabular-nums;flex:none}
-  .days{display:flex;gap:5px;flex-wrap:wrap}
-  .d{font-size:11px;font-weight:700;color:var(--muted);border:1px solid var(--line);
-    padding:4px 8px;border-radius:8px}
-  .d.on{background:var(--accent-soft);border-color:transparent;color:var(--accent)}
-  .every{font-size:12px;font-weight:700;color:var(--violet);background:var(--violet-soft);
-    padding:5px 10px;border-radius:8px}
-  .acts{display:flex;gap:16px}
-  .acts span{font-size:13px;font-weight:600;color:var(--muted)}
+  .task .mid{flex:1;min-width:0}
+  .task .name{font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis}
+  .task .pts{color:var(--coin);font-weight:800;font-size:14px;font-variant-numeric:tabular-nums;flex:none}
+  .task .acts{display:flex;gap:14px;flex:none}
+  .task .acts span{font-size:13px;font-weight:600;color:var(--muted)}
   .tabbar{position:absolute;left:0;right:0;bottom:0;height:84px;background:var(--surface);
     border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:flex-start;
     padding:10px 6px 0}
@@ -71,7 +71,7 @@
 </style>
 </head>
 <body>
-  <div class="caption"><b>KidTasks · макет 3 из 3</b> — экран родителя: задачи, дни недели, баланс<br>статичный макет · референс: Emote Agency</div>
+  <div class="caption"><b>KidTasks · макет 3 из 5 — экран родителя «Задачи»</b> · ревизия 2<br>без дней недели · напоминание от подростка · изменения — с завтрашнего дня</div>
 
   <div class="phone">
     <div class="island"></div>
@@ -88,69 +88,48 @@
       <div class="head">
         <div>
           <h1>Задачи</h1>
-          <div class="sub">Юра · баланс <b>240 ⭐</b></div>
+          <div class="sub">Юра · баланс <b>120 ⭐</b> · в корзине 80 ⭐</div>
         </div>
         <button class="add">+ Задача</button>
       </div>
 
+      <div class="req">
+        <span class="t">❗ Юра спросил:<br>«Что мне сегодня делать?»</span>
+        <button class="go">Назначить</button>
+      </div>
+
+      <div class="note">изменения в списке Юра увидит с завтрашнего дня</div>
+
       <div class="list">
         <div class="task">
-          <div class="row1">
-            <div class="ico i-blue">🗑</div>
-            <div class="mid"><div class="name">Вынести мусор</div></div>
-            <div class="pts">+10 ⭐</div>
-          </div>
-          <div class="days"><span class="every">Каждый день</span></div>
-          <div class="acts"><span>Изменить</span><span>В архив</span></div>
+          <div class="ico i-blue">🗑</div>
+          <div class="mid"><div class="name">Вынести мусор</div></div>
+          <div class="pts">+10 ⭐</div>
+          <div class="acts"><span>Изменить</span><span>Удалить</span></div>
         </div>
-
         <div class="task">
-          <div class="row1">
-            <div class="ico i-violet">📚</div>
-            <div class="mid"><div class="name">Домашка по математике</div></div>
-            <div class="pts">+15 ⭐</div>
-          </div>
-          <div class="days">
-            <span class="d on">Пн</span><span class="d">Вт</span><span class="d on">Ср</span>
-            <span class="d">Чт</span><span class="d on">Пт</span><span class="d">Сб</span><span class="d">Вс</span>
-          </div>
-          <div class="acts"><span>Изменить</span><span>В архив</span></div>
+          <div class="ico i-violet">📚</div>
+          <div class="mid"><div class="name">Домашка по математике</div></div>
+          <div class="pts">+15 ⭐</div>
+          <div class="acts"><span>Изменить</span><span>Удалить</span></div>
         </div>
-
         <div class="task">
-          <div class="row1">
-            <div class="ico i-pink">🧹</div>
-            <div class="mid"><div class="name">Убрать комнату</div></div>
-            <div class="pts">+20 ⭐</div>
-          </div>
-          <div class="days">
-            <span class="d">Пн</span><span class="d">Вт</span><span class="d">Ср</span>
-            <span class="d">Чт</span><span class="d">Пт</span><span class="d on">Сб</span><span class="d">Вс</span>
-          </div>
-          <div class="acts"><span>Изменить</span><span>В архив</span></div>
+          <div class="ico i-pink">🧹</div>
+          <div class="mid"><div class="name">Убрать комнату</div></div>
+          <div class="pts">+20 ⭐</div>
+          <div class="acts"><span>Изменить</span><span>Удалить</span></div>
         </div>
-
         <div class="task">
-          <div class="row1">
-            <div class="ico i-green">🍽</div>
-            <div class="mid"><div class="name">Помыть посуду</div></div>
-            <div class="pts">+10 ⭐</div>
-          </div>
-          <div class="days">
-            <span class="d on">Пн</span><span class="d">Вт</span><span class="d">Ср</span>
-            <span class="d on">Чт</span><span class="d">Пт</span><span class="d">Сб</span><span class="d">Вс</span>
-          </div>
-          <div class="acts"><span>Изменить</span><span>В архив</span></div>
+          <div class="ico i-green">🍽</div>
+          <div class="mid"><div class="name">Помыть посуду</div></div>
+          <div class="pts">+10 ⭐</div>
+          <div class="acts"><span>Изменить</span><span>Удалить</span></div>
         </div>
-
         <div class="task">
-          <div class="row1">
-            <div class="ico i-blue">📖</div>
-            <div class="mid"><div class="name">Читать 30 минут</div></div>
-            <div class="pts">+10 ⭐</div>
-          </div>
-          <div class="days"><span class="every">Каждый день</span></div>
-          <div class="acts"><span>Изменить</span><span>В архив</span></div>
+          <div class="ico i-blue">📖</div>
+          <div class="mid"><div class="name">Читать 30 минут</div></div>
+          <div class="pts">+10 ⭐</div>
+          <div class="acts"><span>Изменить</span><span>Удалить</span></div>
         </div>
       </div>
     </div>
@@ -165,7 +144,7 @@
         Магазин
       </div>
       <div class="tab">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg>
         Баланс
       </div>
       <div class="tab">
