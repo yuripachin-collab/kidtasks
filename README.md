@@ -11,6 +11,8 @@
 - [x] Этап 1. Investigation — [docs/01-investigation.md](docs/01-investigation.md)
 - [x] Этап 2. Спецификация — [docs/02-spec.md](docs/02-spec.md)
 - [x] Этап 3. План / архитектура — [docs/04-plan.md](docs/04-plan.md), макеты: [mockups/](mockups/), референсы: [docs/03-design-references.md](docs/03-design-references.md)
+- [x] Этап 3.5. Ревью Codex до кодинга — [docs/05-codex-review.md](docs/05-codex-review.md) → ревизия 4 спеки
+- [ ] Этап 4. Кодинг (шаги 1–7: скелет, хранилище, подросток, магазин+корзина, родитель, серия+тема, PWA) — первая версия готова, идёт ревью
 - [ ] Этап 4. Кодинг
 - [ ] Этап 5. Тестирование
 - [ ] Этап 6. Деплой (PWA на iPhone + apk в эмуляторе для тренировки)

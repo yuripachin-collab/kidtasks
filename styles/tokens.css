@@ -1,0 +1,40 @@
+/* KidTasks · дизайн-токены.
+   Палитра снята программно с референса Emote Agency (см. tools/palette.py, docs/04-plan.md).
+   Светлая тема — на голом :root; тёмная включается настройкой data-theme="dark"
+   или автоматически через prefers-color-scheme (пока селектор без data-theme="light"). */
+:root{
+  --bg:#EDF3FA; --surface:#FFFFFF; --ink:#1F2430; --muted:#77839B;
+  --accent:#10A070; --accent-soft:#E2F5EE; --accent-ink:#0B7A54;
+  --coin:#E8940F; --coin-soft:#FDF1DC; --coin-ink:#B96E06;
+  --pink:#EF7FA3; --pink-soft:#FBE7EE; --pink-ink:#B8486E;
+  --violet:#8B7CF6; --violet-soft:#EDEAFC; --violet-ink:#4B3FB8;
+  --blue-soft:#DCEAF8; --line:#E3EAF3; --lock:#E8EDF4;
+  --danger:#E4574C; --danger-soft:#FCE9E7;
+  --r-lg:22px; --r-md:16px; --r-sm:12px;
+  --shadow:0 10px 30px rgba(31,42,68,.10);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151D; --surface:#1A2230; --ink:#EAF0F8; --muted:#8C99AF;
+    --accent:#14B981; --accent-soft:#12362A; --accent-ink:#5FD4A8;
+    --coin:#F5B04A; --coin-soft:#39301A; --coin-ink:#F5B04A;
+    --pink:#F08CAD; --pink-soft:#3B2531; --pink-ink:#F5A9C1;
+    --violet:#A99BFF; --violet-soft:#262444; --violet-ink:#C3BAFF;
+    --blue-soft:#1E2C3D; --line:#26303F; --lock:#232E3D;
+    --danger:#F27B71; --danger-soft:#3B2321;
+    --shadow:0 10px 30px rgba(0,0,0,.45);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151D; --surface:#1A2230; --ink:#EAF0F8; --muted:#8C99AF;
+  --accent:#14B981; --accent-soft:#12362A; --accent-ink:#5FD4A8;
+  --coin:#F5B04A; --coin-soft:#39301A; --coin-ink:#F5B04A;
+  --pink:#F08CAD; --pink-soft:#3B2531; --pink-ink:#F5A9C1;
+  --violet:#A99BFF; --violet-soft:#262444; --violet-ink:#C3BAFF;
+  --blue-soft:#1E2C3D; --line:#26303F; --lock:#232E3D;
+  --danger:#F27B71; --danger-soft:#3B2321;
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+  color-scheme:dark;
+}

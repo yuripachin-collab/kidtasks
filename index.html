@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>KidTasks — задачки и магазин</title>
+<meta name="theme-color" content="#10A070">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/app.css">
+</head>
+<body>
+
+  <!-- ====== S0. Онбординг: имя подростка + PIN родителя ====== -->
+  <section class="screen" id="s-onboard" hidden>
+    <div class="auth">
+      <div class="logo">
+        <div class="mark">⭐</div>
+        <h1>KidTasks</h1>
+        <p>Задачи, баллы и магазин наград.<br>Настроим за минуту.</p>
+      </div>
+      <div class="field">
+        <label for="ob-name">Имя подростка</label>
+        <input id="ob-name" type="text" maxlength="60" placeholder="Например, Юра" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="ob-pin">PIN родителя (4 цифры)</label>
+        <input id="ob-pin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="ob-pin2">Повторите PIN</label>
+        <input id="ob-pin2" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
+      </div>
+      <div class="formerr" id="ob-err"></div>
+      <button class="btn btn-big" id="ob-submit">Начать</button>
+      <div class="hintline">Данные остаются только на этом устройстве.</div>
+    </div>
+  </section>
+
+  <!-- ====== S1. Выбор роли ====== -->
+  <section class="screen" id="s-role" hidden>
+    <div class="auth">
+      <div class="logo">
+        <div class="mark">⭐</div>
+        <h1>KidTasks</h1>
+        <p>Кто сегодня за экраном?</p>
+      </div>
+      <button class="rolebtn" id="role-child">
+        <span>Я подросток: <span id="role-child-name">…</span></span>
+        <small>задачи, баллы, магазин</small>
+      </button>
+      <button class="rolebtn" id="role-parent">
+        <span>Я родитель</span>
+        <small>вход по PIN</small>
+      </button>
+    </div>
+  </section>
+
+  <!-- ====== S1b. PIN родителя ====== -->
+  <section class="screen" id="s-pin" hidden>
+    <div class="auth">
+      <div class="logo">
+        <div class="mark" style="background:var(--violet)">🔒</div>
+        <h1>Вход для родителя</h1>
+        <p>Введите PIN</p>
+      </div>
+      <div class="field">
+        <input id="pin-pass" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
+      </div>
+      <div class="formerr" id="pin-err"></div>
+      <button class="btn btn-big" id="pin-submit">Войти</button>
+      <button class="linklike" id="pin-forgot">Забыли PIN?</button>
+      <div id="pin-reset" hidden>
+        <div class="banner banner-pink" style="margin-bottom:10px">
+          Сброс удалит ВСЕ данные (задачи, баллы, историю). Это не отменить.
+        </div>
+        <button class="btn btn-danger btn-big" id="pin-reset-go">Стереть всё и настроить заново</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== Роль: подросток ====== -->
+  <section class="screen" id="s-child" hidden>
+    <div class="topbar">
+      <div>
+        <h1 id="child-hello">Привет!</h1>
+        <div class="sub" id="child-date"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="chip chip-coin" id="child-streak">🔥 0</span>
+        <button class="btn-text" id="child-switch" title="Сменить роль">⇄</button>
+      </div>
+    </div>
+    <div class="panes">
+      <section id="pane-c-tasks" hidden>
+        <div class="card" id="c-balance-card"></div>
+        <div id="c-request"></div>
+        <div class="sec" id="c-tasks-head"><h2>Задачи на сегодня</h2><span class="count" id="c-tasks-count">0 из 0</span></div>
+        <div id="c-tasks-list" style="display:flex;flex-direction:column;gap:10px"></div>
+      </section>
+      <section id="pane-c-shop" hidden><div id="c-shop" style="display:flex;flex-direction:column;gap:12px"></div></section>
+      <section id="pane-c-history" hidden>
+        <div class="label">История баллов</div>
+        <div id="c-history" style="display:flex;flex-direction:column;gap:8px"></div>
+      </section>
+    </div>
+    <nav class="tabbar" id="tabbar-child">
+      <button class="tab on" data-tab="c-tasks">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.2 2.4 2.4 4.6-5.2"/></svg>
+        Задачи
+      </button>
+      <button class="tab" data-tab="c-shop">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1.2 12H7.2L6 8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>
+        Магазин
+      </button>
+      <button class="tab" data-tab="c-history">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg>
+        История
+      </button>
+    </nav>
+  </section>
+
+  <!-- ====== Роль: родитель ====== -->
+  <section class="screen" id="s-parent" hidden>
+    <div class="topbar">
+      <div>
+        <h1>Родитель</h1>
+        <div class="sub" id="parent-sub"></div>
+      </div>
+      <button class="btn-text" id="p-logout">Выйти</button>
+    </div>
+    <div class="panes">
+      <section id="pane-p-tasks" hidden>
+        <div id="p-request"></div>
+        <div id="p-tasks" style="display:flex;flex-direction:column;gap:12px"></div>
+      </section>
+      <section id="pane-p-shop" hidden><div id="p-shop" style="display:flex;flex-direction:column;gap:12px"></div></section>
+      <section id="pane-p-balance" hidden><div id="p-balance" style="display:flex;flex-direction:column;gap:12px"></div></section>
+      <section id="pane-p-settings" hidden><div id="p-settings" style="display:flex;flex-direction:column;gap:13px"></div></section>
+    </div>
+    <nav class="tabbar" id="tabbar-parent">
+      <button class="tab on" data-tab="p-tasks">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.2 2.4 2.4 4.6-5.2"/></svg>
+        Задачи
+      </button>
+      <button class="tab" data-tab="p-shop">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1.2 12H7.2L6 8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>
+        Магазин
+      </button>
+      <button class="tab" data-tab="p-balance">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg>
+        Баланс
+      </button>
+      <button class="tab" data-tab="p-settings">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg>
+        Настройки
+      </button>
+    </nav>
+  </section>
+
+  <div id="toast" hidden style="position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+    background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;
+    box-shadow:var(--shadow);z-index:50;max-width:90vw;text-align:center"></div>
+
+  <script src="js/db.js"></script>
+  <script src="js/rules.js"></script>
+  <script src="js/ops.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
