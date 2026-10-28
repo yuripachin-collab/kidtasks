@@ -38,3 +38,18 @@
   --shadow:0 10px 30px rgba(0,0,0,.45);
   color-scheme:dark;
 }
+
+/* Hallmark · добавка 2026-10-28: усиленные пары для мелкого текста (гейт 40 контраста).
+   --muted 3.8:1 и --coin-ink 3.6:1 по --surface не дотягивали до 4.5:1; существующие токены не тронуты. */
+:root{ --muted-strong:#5F6C86; --coin-ink-strong:#9A5B05; }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --muted-strong:#8C99AF; --coin-ink-strong:#F5B04A; }
+}
+:root[data-theme="dark"]{ --muted-strong:#8C99AF; --coin-ink-strong:#F5B04A; }
+
+/* Hallmark · добавка 2026-10-28: шрифт системы и цвет текста кнопок — подъём литералов из app.css в токены (гейты 48/7a). */
+:root{ --font-body:-apple-system,'SF Pro Text',system-ui,'Segoe UI',Roboto,sans-serif; --btn-ink:#EDF3FA; }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --btn-ink:#10151D; }
+}
+:root[data-theme="dark"]{ --btn-ink:#10151D; }

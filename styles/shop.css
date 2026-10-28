@@ -1,0 +1,85 @@
+/* Hallmark v2.0.0 · shape: app screen · screen: магазин подростка — «обменяй звёздочки» · scope: app
+ * genre: playful · theme: система проекта (styles/tokens.css, направление А) · posture: full palette
+ * job: обменять звёздочки на награду · signature: корзина со статусом «ожидает родителя»
+ * states: default/hover/focus-visible/active/disabled + пустой каталог; loading и success в логики
+ * приложения нет — обмен локальный и мгновенный (перечислено владельцу)
+ * pre-emit critique: P4 H4 E4 S4 R4 V5 · слабейшая E: у кнопки обмена нет loading-состояния —
+ * вместо него мгновенный пересчёт баланса и корзины
+ * dismissed 3 · плитка в карточке — слот фото товара (фото владельца), не иконка-фича; с фото плитка исчезает
+ * dismissed 41 · .card не назначает цвет текста — он наследуется с body и меняется токеном --ink в тёмной теме
+ * answered F3 · у app-экрана нет дисплейных заголовков: «Корзина» и «Награды» коротки и не переносятся
+ * v2.0.0 */
+
+:root{
+  --dur-micro:120ms;
+  --ease-out-k:cubic-bezier(.22,1,.36,1);
+}
+
+/* один рецепт контейнера экрана: на телефоне — панель, от 480px — колонка по центру */
+.shop-pane{ max-width:560px; margin-inline:auto; width:100%; }
+
+/* ---- знак валюты: типографика вместо эмодзи (гейт 30a) ---- */
+.st{ color:var(--coin); font-weight:inherit; font-style:normal; }
+.shop-pane .star{ font-size:14px; line-height:1; }
+
+/* ---- баланс: то, чем меняют ---- */
+.shop-balance{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px; }
+.shop-lbl{ font-size:14px; font-weight:600; color:var(--muted-strong); }
+.shop-balance .chip{ font-size:17px; padding:8px 16px; color:var(--coin-ink-strong); }
+.shop-balance .star{ font-size:15px; }
+
+/* ---- заголовки секций ---- */
+.shop-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:28px; }
+.shop-h2{ display:flex; align-items:center; gap:8px; font-size:17px; font-weight:700; letter-spacing:-.01em; }
+.shop-h2 svg{ color:var(--violet-ink); flex-shrink:0; }
+.shop-count{ font-size:13px; font-weight:600; color:var(--muted-strong); font-variant-numeric:tabular-nums;
+  background:var(--lock); padding:4px 8px; border-radius:999px; }
+
+/* ---- корзина: обмен ждёт родителя ---- */
+.shop-cart{ padding:16px 16px 12px; display:flex; flex-direction:column; }
+.shop-crow{ display:flex; align-items:center; gap:12px; min-width:0; padding:12px 0; border-bottom:1px solid var(--line); }
+.shop-crow:last-of-type{ border-bottom:0; }
+.shop-crow-mid{ flex:1; min-width:0; }
+.shop-name{ margin:0; font-size:15px; font-weight:600; overflow-wrap:break-word; min-width:0; }
+.shop-sub{ font-size:13px; color:var(--muted-strong); margin-top:2px; }
+.shop-sum{ font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.shop-x{ position:relative; width:32px; height:32px; border:0; border-radius:10px; cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center; background:var(--pink-soft); color:var(--pink-ink);
+  flex-shrink:0; transition:background-color var(--dur-micro) var(--ease-out-k); }
+.shop-x::before{ content:""; position:absolute; inset:-7px; } /* тач-зона от 44px */
+.shop-x svg{ display:block; }
+.shop-total{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-top:2px; padding-top:12px; border-top:1px solid var(--line); }
+.shop-wait{ color:var(--violet-ink); }
+.shop-sum-big{ font-size:17px; font-weight:700; }
+
+/* ---- каталог наград ---- */
+.shop-catalog{ display:flex; flex-direction:column; gap:12px; }
+.shop-grid{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; }
+@media (min-width:480px){ .shop-grid{ grid-template-columns:repeat(3, minmax(0,1fr)); } }
+.shop-item{ padding:12px; display:flex; flex-direction:column; gap:8px; min-width:0; }
+.shop-item .shop-name{ font-size:14px; }
+.shop-pic{ width:100%; aspect-ratio:4/3; border-radius:var(--r-sm); object-fit:cover; display:block; background:var(--blue-soft); }
+.shop-pic-ph{ display:flex; align-items:center; justify-content:center; color:var(--muted-strong); }
+.shop-pic-ph svg{ width:34px; height:34px; }
+.shop-price{ display:flex; align-items:center; gap:8px; font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; }
+.shop-price .star{ width:18px; height:18px; font-size:11px; }
+.shop-buy{ width:100%; margin-top:auto; white-space:nowrap; }
+.shop-pane .btn-ghost[disabled]{ cursor:not-allowed; } /* disabled: opacity + курсор + native атрибут */
+
+/* подпись пустого состояния: --muted по --bg не дотягивает 4.5:1 (гейт 40) */
+.shop-pane .empty .s{ color:var(--muted-strong); }
+
+/* ---- состояния: по одному сигналу, мгновенное кольцо фокуса ---- */
+.shop-pane .btn, .shop-x{ transition:background-color var(--dur-micro) var(--ease-out-k); }
+@media (hover:hover){
+  .shop-pane .btn-ghost:not([disabled]):hover{ background:var(--lock); }
+  .shop-x:hover{ background:color-mix(in srgb, var(--pink) 22%, var(--pink-soft)); }
+}
+.shop-pane .btn:active{ transform:translateY(1px); }
+.shop-pane .btn:focus-visible, .shop-x:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+.empty .emo svg{ width:40px; height:40px; display:block; }
+
+@media (prefers-reduced-motion: reduce){
+  .shop-pane, .shop-pane *{ transition:none !important; }
+}

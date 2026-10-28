@@ -161,12 +161,12 @@ try {
     await text(() => document.querySelector('#c-shop').innerText.includes('Корзина'));
     await page.click('#c-shop [data-action="add"]');
     await text(() => /×2/.test(document.querySelector('#c-shop').innerText));
-    await text(() => document.querySelector('#c-shop .chip-coin').textContent.trim() === '⭐0');
+    await text(() => document.querySelector('#c-shop .chip-coin').textContent.trim() === '★0');
   });
 
   await step('12. подросток: ✕ убирает штуку — +10 ⭐ вернулись (критерий 7)', async () => {
     await page.click('#c-shop [data-action="unit"]');
-    await text(() => document.querySelector('#c-shop .chip-coin').textContent.trim() === '⭐10');
+    await text(() => document.querySelector('#c-shop .chip-coin').textContent.trim() === '★10');
   });
 
   await step('13. перезагрузка: корзина и баланс живы (критерий 14)', async () => {
@@ -176,7 +176,7 @@ try {
     // ×1 не пишем — «×N» появляется только при 2+ штуках; проверяем суть: позиция, цена, статус, баланс
     await text(() => document.querySelector('#c-shop').innerText.includes('Шоколадка')
       && document.querySelector('#c-shop').innerText.includes('ожидает родителя')
-      && document.querySelector('#c-shop .chip-coin').textContent.trim() === '⭐10');
+      && document.querySelector('#c-shop .chip-coin').textContent.trim() === '★10');
   });
 
   await step('14. родитель: «Выдано» с подтверждением → корзина пуста (критерий 9)', async () => {

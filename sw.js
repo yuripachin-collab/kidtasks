@@ -1,13 +1,14 @@
 'use strict';
 /* KidTasks · service worker: кэш приложения для работы без сети.
    Версия в имени кэша: меняем при обновлении файлов — старый кэш удаляется (п.22 ревью). */
-const CACHE = 'kidtasks-v1';
+const CACHE = 'kidtasks-v2';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './styles/tokens.css',
   './styles/app.css',
+  './styles/shop.css',
   './js/db.js',
   './js/rules.js',
   './js/ops.js',

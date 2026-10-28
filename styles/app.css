@@ -3,7 +3,7 @@
 html,body{height:100%}
 body{
   background:var(--bg);color:var(--ink);
-  font-family:-apple-system,'SF Pro Text',system-ui,'Segoe UI',Roboto,sans-serif;
+  font-family:var(--font-body);
   font-size:16px;line-height:1.45;
 }
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
@@ -50,8 +50,8 @@ input,select{font:inherit;color:inherit}
 /* ---- кнопки: тач-зона от 44px в обе стороны (ревью Codex, п.28/37) ---- */
 .btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;
   padding:10px 18px;border-radius:var(--r-sm);
-  background:var(--accent);color:#fff;font-size:14px;font-weight:700}
-.btn:disabled{opacity:.55}
+  background:var(--accent);color:var(--btn-ink);font-size:14px;font-weight:700}
+.btn:disabled{opacity:.55;cursor:not-allowed}
 .btn-ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
 .btn-danger{background:var(--danger)}
 .btn-text{color:var(--muted);font-size:13px;font-weight:600;min-height:44px;min-width:44px;padding:10px}
@@ -65,7 +65,7 @@ input,select{font:inherit;color:inherit}
 .chip-violet{background:var(--violet-soft);color:var(--violet-ink)}
 .chip-pink{background:var(--pink-soft);color:var(--pink-ink)}
 .chip-soft{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
-.star{width:22px;height:22px;border-radius:50%;background:var(--coin);color:#fff;
+.star{width:22px;height:22px;border-radius:50%;background:var(--coin);color:var(--btn-ink);
   display:flex;align-items:center;justify-content:center;font-size:12px;flex:none}
 
 /* ---- формы ---- */
@@ -94,7 +94,7 @@ input,select{font:inherit;color:inherit}
   padding:24px;max-width:420px;width:100%;margin:0 auto}
 .auth .logo{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:8px;text-align:center}
 .auth .logo .mark{width:64px;height:64px;border-radius:20px;background:var(--accent);
-  color:#fff;font-size:30px;display:flex;align-items:center;justify-content:center}
+  color:var(--btn-ink);font-size:30px;display:flex;align-items:center;justify-content:center}
 .auth .logo h1{font-size:26px;font-weight:800;letter-spacing:-.02em}
 .auth .logo p{color:var(--muted);font-size:14px}
 .rolebtn{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;
@@ -108,5 +108,16 @@ input,select{font:inherit;color:inherit}
 .sec h2{font-size:17px;font-weight:700}
 .sec .count{font-size:13px;font-weight:600;color:var(--muted);background:var(--surface);
   padding:4px 10px;border-radius:999px;font-variant-numeric:tabular-nums}
-.label{font-size:13px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
-  color:var(--muted);margin-top:4px}
+.label{font-size:13px;font-weight:600;color:var(--muted-strong);margin-top:4px}
+
+/* ---- Hallmark · добавка 2026-10-28 (общие поверхности; правила выше не тронуты) ---- */
+html,body{overflow-x:clip}
+::selection{background:var(--violet-soft);color:var(--ink)}
+input,textarea{caret-color:var(--accent)}
+/* гейт 40: белый текст по --accent даёт 3.3:1 на светлой и 2.6:1 на тёмной теме;
+   усилено до 5.4:1 и 7.2:1. .btn-danger и .btn-ghost сохраняют свои заливки. */
+.btn:not(.btn-danger):not(.btn-ghost){background:var(--accent-ink)}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .btn:not(.btn-danger):not(.btn-ghost){background:var(--accent);color:var(--bg)}
+}
+:root[data-theme="dark"] .btn:not(.btn-danger):not(.btn-ghost){background:var(--accent);color:var(--bg)}

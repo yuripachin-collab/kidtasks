@@ -270,50 +270,56 @@ window.App = (function () {
     });
   });
 
-  /* ---------- подросток: магазин ---------- */
+  /* ---------- подросток: магазин (разметка — styles/shop.css; логика обмена не менялась) ---------- */
+  const ICONS = {
+    cart: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8h12l-1.2 12H7.2L6 8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>',
+    gift: '<svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="9" rx="1.5"/><path d="M3 7.5h18V11H3z"/><path d="M12 7.5V20"/><path d="M12 7.5C8.5 7.5 7 6.3 7 4.9 7 3.9 7.8 3 8.9 3c1.5 0 2.6 1.6 3.1 4.5zm0 0C15.5 7.5 17 6.3 17 4.9 17 3.9 16.2 3 15.1 3c-1.5 0-2.6 1.6-3.1 4.5z"/></svg>',
+    x: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+  };
   async function renderChildShop() {
     await D.ensureToday();
     const products = await D.all('products');
     const cart = await D.all('cart');
     const bal = R.computeBalance(await D.all('history'));
     const total = R.cartTotal(cart);
-    let html = '<div class="card row" style="justify-content:space-between">'
-      + '<span class="label" style="margin:0">Доступно</span>'
-      + '<span class="chip chip-coin"><span class="star">⭐</span>' + bal + '</span></div>'; // п.26 ревью
+    const star = ' <span class="st" aria-hidden="true">★</span>'; // знак валюты: типографика, не эмодзи (гейт 30a)
+    let html = '<div class="card shop-balance"><span class="shop-lbl">Доступно</span>'
+      + '<span class="chip chip-coin"><span class="star" aria-hidden="true">★</span>' + bal + '</span></div>'; // п.26 ревью; текст чипа «★N» проверяет e2e
     if (cart.length > 0) {
-      html += '<div class="card"><div class="row" style="justify-content:space-between"><b style="font-size:16px">🛒 Корзина</b>'
-        + '<span class="chip chip-violet">' + cart.reduce((s, p) => s + p.qty, 0) + ' шт · ' + total + ' ⭐</span></div>';
+      html += '<section class="card shop-cart"><div class="shop-head"><h2 class="shop-h2">' + ICONS.cart + 'Корзина</h2>'
+        + '<span class="chip chip-violet">' + cart.reduce((s, p) => s + p.qty, 0) + ' шт</span></div>';
       for (const p of cart) {
-        html += '<div class="row" style="padding:9px 0;border-bottom:1px solid var(--line)">'
-          + '<div class="mid"><div class="name">' + esc(p.name) + (p.qty > 1 ? ' ×' + p.qty : '') + '</div>'
-          + '<div class="sub2">' + p.unitPrice + ' ⭐ за штуку</div></div>'
-          + '<b style="font-variant-numeric:tabular-nums">' + p.unitPrice * p.qty + ' ⭐</b>'
-          + '<button class="btn btn-ghost" data-action="unit" data-key="' + p.key + '" aria-label="Убрать одну штуку">✕</button></div>';
+        html += '<div class="shop-crow">'
+          + '<div class="shop-crow-mid"><div class="shop-name">' + esc(p.name) + (p.qty > 1 ? ' ×' + p.qty : '') + '</div>'
+          + '<div class="shop-sub">' + p.unitPrice + star + ' за штуку</div></div>'
+          + '<b class="shop-sum">' + p.unitPrice * p.qty + star + '</b>'
+          + '<button class="shop-x" data-action="unit" data-key="' + p.key + '" aria-label="Убрать одну штуку">' + ICONS.x + '</button></div>';
       }
-      html += '<div class="row" style="justify-content:space-between;margin-top:9px;padding-top:10px;border-top:1px solid var(--line)">'
-        + '<span class="sub2">Итого · <b style="color:var(--violet-ink)">ожидает родителя</b></span>'
-        + '<b style="font-size:16px;font-variant-numeric:tabular-nums">' + total + ' ⭐</b></div></div>';
+      html += '<div class="shop-total"><span class="shop-sub">Итого: <b class="shop-wait">ожидает родителя</b></span>'
+        + '<b class="shop-sum shop-sum-big">' + total + star + '</b></div></section>';
     }
-    html += '<div class="label">Каталог</div>';
+    html += '<section class="shop-catalog"><div class="shop-head"><h2 class="shop-h2">Награды</h2>'
+      + (products.length ? '<span class="shop-count">' + products.length + '</span>' : '') + '</div>';
     if (products.length === 0) {
-      html += '<div class="empty"><div class="emo">🎁</div><div class="t">Магазин пока пуст</div><div class="s">Родитель добавит товары — они появятся здесь.</div></div>';
+      html += '<div class="empty"><div class="emo">' + ICONS.gift + '</div><div class="t">Магазин пока пуст</div><div class="s">Родитель добавит товары. Они появятся здесь.</div></div>';
     } else {
-      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
+      html += '<div class="shop-grid">';
       for (const p of products) {
         const afford = bal >= p.price;
         const img = p.photo
-          ? '<img src="' + p.photo + '" alt="" style="width:100%;height:86px;object-fit:cover;border-radius:12px">'
-          : '<div style="height:86px;border-radius:12px;background:var(--blue-soft);display:flex;align-items:center;justify-content:center;font-size:36px">🎁</div>';
-        html += '<div class="card" style="padding:10px;display:flex;flex-direction:column;gap:8px">' + img
-          + '<div class="name">' + esc(p.name) + '</div>'
-          + '<div style="display:flex;align-items:center;gap:6px;color:var(--coin-ink);font-weight:800;font-variant-numeric:tabular-nums"><span class="star" style="width:18px;height:18px;font-size:10px">⭐</span>' + p.price + '</div>'
+          ? '<img class="shop-pic" src="' + p.photo + '" alt="" decoding="async">'
+          : '<div class="shop-pic shop-pic-ph" role="img" aria-label="Фото не добавлено">' + ICONS.gift + '</div>';
+        html += '<article class="card shop-item">' + img
+          + '<h3 class="shop-name">' + esc(p.name) + '</h3>'
+          + '<div class="shop-price"><span class="star" aria-hidden="true">★</span>' + p.price + '</div>'
           + (afford
-            ? '<button class="btn" data-action="add" data-id="' + p.id + '">+ В корзину</button>'
-            : '<button class="btn btn-ghost" disabled>Не хватает ' + (p.price - bal) + ' ⭐</button>')
-          + '</div>';
+            ? '<button class="btn shop-buy" data-action="add" data-id="' + p.id + '">Обменять</button>'
+            : '<button class="btn btn-ghost shop-buy" disabled>Не хватает ' + (p.price - bal) + star + '</button>')
+          + '</article>';
       }
       html += '</div>';
     }
+    html += '</section>';
     $('#c-shop').innerHTML = html;
   }
   $('#pane-c-shop').addEventListener('click', async (e) => {
